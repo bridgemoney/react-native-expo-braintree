@@ -6,7 +6,9 @@ import {
   type BTPayPalError,
   type BTPayPalGetDeviceDataResult,
   type BTCardTokenizationNonceResult,
-  type TokenizeCardOptions, type RequestApplePayPaymentOptions, type BTApplePayTokenizationNonceResult,
+  type TokenizeCardOptions,
+  type RequestApplePayPaymentOptions,
+  type BTApplePayTokenizationNonceResult,
 } from './types';
 
 const LINKING_ERROR =
