@@ -17,12 +17,12 @@ enum EXCEPTION_TYPES: String {
   case TOKENIZE_EXCEPTION = "ReactNativeExpoBraintree:`TokenizeException"
   case PAYPAL_DISABLED_IN_CONFIGURATION =
     "ReactNativeExpoBraintree:`Paypal disabled in configuration"
-  case MERCHANT_ID_EXCEPTION = "ReactNativeExpoBraintree:`You must provide merchantId`"
-  case MERCHANT_NAME_EXCEPTION = "ReactNativeExpoBraintree:`You must provide merchantName`"
-  case APPLE_PAY_SHEET_EXCEPTION = "ReactNativeExpoBraintree:`Cannot present ApplePay sheet`"
-  case APPLE_PAY_PAYMENT_EXCEPTION = "ReactNativeExpoBraintree:`You cannot make ApplePay payments`"
-  case APPLE_PAY_TOKEN_EXCEPTION = "ReactNativeExpoBraintree:`Cannot tokenize ApplePay payment`"
-  case APPLE_PAY_REQUEST_EXCEPTION = "ReactNativeExpoBraintree:`Cannot create a payment request`"
+  case MERCHANT_ID_EXCEPTION = "ReactNativeExpoBraintree:`You must provide merchantId"
+  case MERCHANT_NAME_EXCEPTION = "ReactNativeExpoBraintree:`You must provide merchantName"
+  case APPLE_PAY_SHEET_EXCEPTION = "ReactNativeExpoBraintree:`Cannot present ApplePay sheet"
+  case APPLE_PAY_PAYMENT_EXCEPTION = "ReactNativeExpoBraintree:`You cannot make ApplePay payments"
+  case APPLE_PAY_TOKEN_EXCEPTION = "ReactNativeExpoBraintree:`Cannot tokenize ApplePay payment"
+  case APPLE_PAY_REQUEST_EXCEPTION = "ReactNativeExpoBraintree:`Cannot create a payment request"
 }
 
 enum ERROR_TYPES: String {

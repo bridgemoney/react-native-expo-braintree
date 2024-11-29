@@ -6,7 +6,7 @@ import {
   type BTPayPalError,
   type BTPayPalGetDeviceDataResult,
   type BTCardTokenizationNonceResult,
-  type TokenizeCardOptions,
+  type TokenizeCardOptions, type RequestApplePayPaymentOptions, type BTApplePayTokenizationNonceResult,
 } from './types';
 
 const LINKING_ERROR =
@@ -68,6 +68,18 @@ export async function tokenizeCardData(
   try {
     const result: BTCardTokenizationNonceResult =
       await ExpoBraintree.tokenizeCardData(options);
+    return result;
+  } catch (ex: unknown) {
+    return ex as BTPayPalError;
+  }
+}
+
+export async function requestApplePayPayment(
+  options: RequestApplePayPaymentOptions
+): Promise<BTApplePayTokenizationNonceResult | BTPayPalError> {
+  try {
+    const result: BTApplePayTokenizationNonceResult =
+      await ExpoBraintree.requestApplePayPayment(options);
     return result;
   } catch (ex: unknown) {
     return ex as BTPayPalError;
