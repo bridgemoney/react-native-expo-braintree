@@ -224,7 +224,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
               reject(
                 EXCEPTION_TYPES.APPLE_PAY_SHEET_EXCEPTION.rawValue,
                 ERROR_TYPES.APPLE_PAY_SHEET_ERROR.rawValue,
-                NSError(domain: ERROR_TYPES.APPLE_PAY_SHEET_EXCEPTION.rawValue, code: -1)
+                NSError(domain: ERROR_TYPES.APPLE_PAY_SHEET_ERROR.rawValue, code: -1)
               )
             }
           })
