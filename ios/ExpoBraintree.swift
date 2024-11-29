@@ -217,7 +217,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
           request!.paymentSummaryItems = [paymentItem]
           request!.requiredBillingContactFields = [.name, .postalAddress]
 
-          self.paymentController = PKPaymentAuthorizationController(paymentRequest: request)
+          self.paymentController = PKPaymentAuthorizationController(paymentRequest: request!)
           self.paymentController!.delegate = self
           self.paymentController!.present(completion: {(presented: Bool) in
             if (!presented) {
