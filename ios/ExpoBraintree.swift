@@ -6,7 +6,6 @@
 //
 
 import Braintree
-import BraintreeApplePay
 import PassKit
 import Foundation
 import React
