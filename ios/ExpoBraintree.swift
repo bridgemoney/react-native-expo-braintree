@@ -210,8 +210,8 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
 
           let paymentItem = PKPaymentSummaryItem.init(label: merchantName!, amount: NSDecimalNumber(string: amount), type: .final)
 
-          request!.currencyCode = currencyCode!
-          request!.countryCode = countryCode!
+          request!.currencyCode = currencyCode
+          request!.countryCode = countryCode
           request!.merchantCapabilities = PKMerchantCapability.capability3DS
           request!.supportedNetworks = self.supportedNetworks
           request!.paymentSummaryItems = [paymentItem]
