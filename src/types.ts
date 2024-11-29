@@ -3,7 +3,6 @@ export enum EXCEPTION_TYPES {
   USER_CANCEL_EXCEPTION = 'ExpoBraintree:`UserCancelException',
   PAYPAL_DISABLED_IN_CONFIGURATION = 'ExpoBraintree:`Paypal disabled in configuration',
   TOKENIZE_EXCEPTION = 'ExpoBraintree:`TokenizeException',
-  MERCHANT_ID_EXCEPTION = 'ReactNativeExpoBraintree:`You must provide merchantId',
   MERCHANT_NAME_EXCEPTION = 'ReactNativeExpoBraintree:`You must provide merchantName',
   APPLE_PAY_SHEET_EXCEPTION = 'ReactNativeExpoBraintree:`Cannot present ApplePay sheet',
   APPLE_PAY_PAYMENT_EXCEPTION = 'ReactNativeExpoBraintree:`You cannot make ApplePay payments',
@@ -18,7 +17,6 @@ export enum ERROR_TYPES {
   PAYPAL_DISABLED_IN_CONFIGURATION_ERROR = 'PAYPAL_DISABLED_IN_CONFIGURATION_ERROR',
   DATA_COLLECTOR_ERROR = 'DATA_COLLECTOR_ERROR',
   CARD_TOKENIZATION_ERROR = 'CARD_TOKENIZATION_ERROR',
-  MERCHANT_ID_ERROR = 'MERCHANT_ID_ERROR',
   MERCHANT_NAME_ERROR = 'MERCHANT_NAME_ERROR',
   APPLE_PAY_SHEET_ERROR = 'APPLE_PAY_SHEET_ERROR',
   APPLE_PAY_PAYMENT_ERROR = 'APPLE_PAY_PAYMENT_ERROR',
@@ -111,7 +109,6 @@ export type BTPayPalError = {
 
 export type RequestApplePayPaymentOptions = {
   amount: string;
-  merchantId: string;
   merchantName: string;
   currencyCode?: string;
   countryCode?: string;
