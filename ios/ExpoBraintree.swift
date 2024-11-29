@@ -193,7 +193,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
       self.reject = reject
 
       let btClient = BTAPIClient(authorization: clientToken)
-      self.applePayClient = BTApplePayClient(apiClient: apiClient)
+      self.applePayClient = BTApplePayClient(apiClient: btClient)
 
       let status = applePayStatus()
 
@@ -208,14 +208,14 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
             return
           }
 
-          let paymentItem = PKPaymentSummaryItem.init(label: merchantName, amount: NSDecimalNumber(string: amount), type: .final)
+          let paymentItem = PKPaymentSummaryItem.init(label: merchantName!, amount: NSDecimalNumber(string: amount), type: .final)
 
           request.currencyCode = currencyCode
           request.countryCode = countryCode
           request.merchantCapabilities = PKMerchantCapability.capability3DS
           request.supportedNetworks = self.supportedNetworks
           request.paymentSummaryItems = [paymentItem]
-          request.requiredBillingContactFields = [ApplePayContactField.name, ApplePayContactField.postalAddress]
+          request.requiredBillingContactFields = [.name, .postalAddress]
 
           self.paymentController = PKPaymentAuthorizationController(paymentRequest: request)
           self.paymentController!.delegate = self
@@ -308,7 +308,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
   }
 
   @objc internal func paymentAuthorizationController(_ controller: PKPaymentAuthorizationController, didAuthorizePayment payment: PKPayment, handler completion: @escaping (PKPaymentAuthorizationResult) -> Void) {
-    self.applePayClient!.tokenizeApplePayPayment(payment) { (applePayNonce, error) in
+    self.applePayClient!.tokenize(payment) { (applePayNonce, error) in
       if (error != nil) {
         self.reject!(
           EXCEPTION_TYPES.APPLE_PAY_TOKEN_EXCEPTION.rawValue,
