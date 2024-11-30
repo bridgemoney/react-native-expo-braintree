@@ -6,8 +6,11 @@
 //
 
 import Braintree
-import PassKit
+
 import Foundation
+
+import PassKit
+
 import React
 
 enum EXCEPTION_TYPES: String {
@@ -21,8 +24,9 @@ enum EXCEPTION_TYPES: String {
   case APPLE_PAY_PAYMENT_EXCEPTION = "ReactNativeExpoBraintree:`You cannot make ApplePay payments"
   case APPLE_PAY_TOKEN_EXCEPTION = "ReactNativeExpoBraintree:`Cannot tokenize ApplePay payment"
   case APPLE_PAY_REQUEST_EXCEPTION = "ReactNativeExpoBraintree:`Cannot create a payment request"
+  case APPLE_PAY_REQUEST_AUTHORIZATION_EXCEPTION =
+    "ReactNativeExpoBraintree:`Cannot authroize a payment request"
 }
-
 enum ERROR_TYPES: String {
   case API_CLIENT_INITIALIZATION_ERROR = "API_CLIENT_INITIALIZATION_ERROR"
   case TOKENIZE_VAULT_PAYMENT_ERROR = "TOKENIZE_VAULT_PAYMENT_ERROR"
@@ -35,8 +39,8 @@ enum ERROR_TYPES: String {
   case APPLE_PAY_PAYMENT_ERROR = "APPLE_PAY_PAYMENT_ERROR"
   case APPLE_PAY_TOKEN_ERROR = "APPLE_PAY_TOKEN_ERROR"
   case APPLE_PAY_REQUEST_ERROR = "APPLE_PAY_REQUEST_ERROR"
+  case APPLE_PAY_REQUEST_AUTHORIZATION_ERROR = "APPLE_PAY_REQUEST_AUTHORIZATION_ERROR"
 }
-
 @objc(ExpoBraintree)
 class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
 
@@ -46,13 +50,13 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
     .masterCard,
     .visa,
     .interac,
-    .JCB
+    .JCB,
   ]
   var resolve: RCTPromiseResolveBlock? = nil
   var reject: RCTPromiseRejectBlock? = nil
-  var btClient: BTAPIClient? = nil
   var applePayClient: BTApplePayClient? = nil
   var paymentController: PKPaymentAuthorizationController? = nil
+  var apiClient: BTAPIClient? = nil
 
   @objc(requestBillingAgreement:withResolver:withRejecter:)
   func requestBillingAgreement(
@@ -171,56 +175,69 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
   }
 
   @objc(requestApplePayPayment:withResolver:withRejecter:)
-    func requestApplePayPayment(
-      options: [String: String], resolve: @escaping RCTPromiseResolveBlock,
-      reject: @escaping RCTPromiseRejectBlock
-    ) {
-      let clientToken = options["clientToken"] ?? ""
-      let merchantName = options["merchantName"] ?? nil
-      let amount: String = options["amount"] as! String
-      let countryCode: String = options["countryCode"] ?? "US"
-      let currencyCode: String = options["currencyCode"] ?? "USD"
+  func requestApplePayPayment(
+    options: [String: String], resolve: @escaping RCTPromiseResolveBlock,
+    reject: @escaping RCTPromiseRejectBlock
+  ) {
+    let clientToken: String = options["clientToken"] ?? ""
+    let merchantName: String? = options["merchantName"] ?? nil
+    let amount: String = options["amount"] as! String
+    let countryCode: String = options["countryCode"] ?? "US"
+    let currencyCode: String = options["currencyCode"] ?? "USD"
 
-      if (merchantName == nil) {
-        reject(
-          EXCEPTION_TYPES.MERCHANT_NAME_EXCEPTION.rawValue,
-          ERROR_TYPES.MERCHANT_NAME_ERROR.rawValue,
-          NSError(domain: ERROR_TYPES.MERCHANT_NAME_ERROR.rawValue, code: -1)
-        )
-      }
+    if merchantName == nil {
+      reject(
+        EXCEPTION_TYPES.MERCHANT_NAME_EXCEPTION.rawValue,
+        ERROR_TYPES.MERCHANT_NAME_ERROR.rawValue,
+        NSError(domain: ERROR_TYPES.MERCHANT_NAME_ERROR.rawValue, code: -1)
+      )
+    }
 
-      self.resolve = resolve
-      self.reject = reject
+    self.resolve = resolve
+    self.reject = reject
 
-      let btClient = BTAPIClient(authorization: clientToken)
-      self.applePayClient = BTApplePayClient(apiClient: btClient!)
+    self.apiClient = BTAPIClient(authorization: clientToken)
+    self.applePayClient = BTApplePayClient(apiClient: self.apiClient!)
 
-      let status = applePayStatus()
+    let status = applePayStatus()
 
-      if (status.canMakePayments) {
-        self.applePayClient!.makePaymentRequest{(request, error) in
-          if (error != nil) {
-            reject(
-              EXCEPTION_TYPES.APPLE_PAY_REQUEST_EXCEPTION.rawValue,
-              ERROR_TYPES.APPLE_PAY_REQUEST_ERROR.rawValue,
-              NSError(domain: ERROR_TYPES.APPLE_PAY_REQUEST_ERROR.rawValue, code: -1)
-            )
-            return
-          }
+    if status.canMakePayments {
+      self.applePayClient!.makePaymentRequest { (request, error) in
+        guard error == nil else {
+          reject(
+            EXCEPTION_TYPES.APPLE_PAY_REQUEST_EXCEPTION.rawValue,
+            ERROR_TYPES.APPLE_PAY_REQUEST_ERROR.rawValue,
+            NSError(domain: error.localizedDescription, code: -1)
+          )
+          return
+        }
 
-          let paymentItem = PKPaymentSummaryItem.init(label: merchantName!, amount: NSDecimalNumber(string: amount), type: .final)
+        guard let paymentRequest = request else {
+          reject(
+            EXCEPTION_TYPES.APPLE_PAY_REQUEST_EXCEPTION.rawValue,
+            ERROR_TYPES.APPLE_PAY_REQUEST_ERROR.rawValue,
+            NSError(domain: ERROR_TYPES.APPLE_PAY_REQUEST_ERROR.rawValue, code: -1)
+          )
+          return
+        }
 
-          request!.currencyCode = currencyCode
-          request!.countryCode = countryCode
-          request!.merchantCapabilities = PKMerchantCapability.capability3DS
-          request!.supportedNetworks = self.supportedNetworks
-          request!.paymentSummaryItems = [paymentItem]
-          request!.requiredBillingContactFields = [.name, .postalAddress]
+        let paymentItem = PKPaymentSummaryItem.init(
+          label: merchantName!, amount: NSDecimalNumber(string: amount), type: .final)
 
-          self.paymentController = PKPaymentAuthorizationController(paymentRequest: request!)
+        paymentRequest.currencyCode = currencyCode
+        paymentRequest.countryCode = countryCode
+        paymentRequest.merchantCapabilities = PKMerchantCapability.capability3DS
+        paymentRequest.supportedNetworks = self.supportedNetworks
+        paymentRequest.paymentSummaryItems = [paymentItem]
+        paymentRequest.requiredBillingContactFields = [.postalAddress]
+
+        if let pc = PKPaymentAuthorizationController(paymentRequest: paymentRequest)
+          as PKPaymentAuthorizationController?
+        {
+          self.paymentController = pc
           self.paymentController!.delegate = self
-          self.paymentController!.present(completion: {(presented: Bool) in
-            if (!presented) {
+          self.paymentController!.present(completion: { (presented: Bool) in
+            if !presented {
               reject(
                 EXCEPTION_TYPES.APPLE_PAY_SHEET_EXCEPTION.rawValue,
                 ERROR_TYPES.APPLE_PAY_SHEET_ERROR.rawValue,
@@ -228,15 +245,23 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
               )
             }
           })
+        } else {
+          reject(
+            EXCEPTION_TYPES.APPLE_PAY_REQUEST_AUTHORIZATION_EXCEPTION.rawValue,
+            ERROR_TYPES.APPLE_PAY_REQUEST_AUTHORIZATION_ERROR.rawValue,
+            NSError(domain: ERROR_TYPES.APPLE_PAY_REQUEST_AUTHORIZATION_ERROR.rawValue, code: -1)
+          )
         }
-      } else {
-        reject(
-          EXCEPTION_TYPES.APPLE_PAY_PAYMENT_EXCEPTION.rawValue,
-          ERROR_TYPES.APPLE_PAY_PAYMENT_ERROR.rawValue,
-          NSError(domain: ERROR_TYPES.APPLE_PAY_PAYMENT_ERROR.rawValue, code: -1)
-        )
+
       }
+    } else {
+      reject(
+        EXCEPTION_TYPES.APPLE_PAY_PAYMENT_EXCEPTION.rawValue,
+        ERROR_TYPES.APPLE_PAY_PAYMENT_ERROR.rawValue,
+        NSError(domain: ERROR_TYPES.APPLE_PAY_PAYMENT_ERROR.rawValue, code: -1)
+      )
     }
+  }
 
   @objc(getDeviceDataFromDataCollector:withResolver:withRejecter:)
   func getDeviceDataFromDataCollector(
@@ -307,42 +332,58 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
     }
   }
 
-  @objc internal func paymentAuthorizationController(_ controller: PKPaymentAuthorizationController, didAuthorizePayment payment: PKPayment, handler completion: @escaping (PKPaymentAuthorizationResult) -> Void) {
+  @objc internal func paymentAuthorizationController(
+    _ controller: PKPaymentAuthorizationController,
+    didAuthorizePayment payment: PKPayment,
+    handler completion: @escaping (PKPaymentAuthorizationResult) -> Void
+  ) {
     self.applePayClient!.tokenize(payment) { (applePayNonce, error) in
-      if (error != nil) {
+      guard error == nil else {
+        self.reject!(
+          EXCEPTION_TYPES.APPLE_PAY_TOKEN_EXCEPTION.rawValue,
+          ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue,
+          NSError(domain: error.localizedDescription, code: -1)
+        )
+        completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
+      }
+
+      guard let appNonce = applePayNonce else {
         self.reject!(
           EXCEPTION_TYPES.APPLE_PAY_TOKEN_EXCEPTION.rawValue,
           ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue,
           NSError(domain: ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue, code: -1)
         )
         completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
-      } else {
-        self.resolve!(["nonce": applePayNonce!.nonce])
-        completion(PKPaymentAuthorizationResult(status: .success, errors: nil))
       }
+
+      self.resolve!(["nonce": appNonce.nonce])
+      completion(PKPaymentAuthorizationResult(status: .success, errors: nil))
     }
 
     self.resetPromise()
   }
 
   func paymentAuthorizationControllerDidFinish(_ controller: PKPaymentAuthorizationController) {
-    if (self.paymentController != nil) {
+    if self.paymentController != nil {
       self.paymentController!.dismiss(completion: nil)
     }
 
-    if (self.reject != nil) {
+    if self.reject != nil {
       self.resolve!(["cancelled": true])
     }
 
     self.resetPromise()
   }
 
-  private func resetPromise() -> Void {
+  private func resetPromise() {
     self.reject = nil
     self.resolve = nil
   }
 
   private func applePayStatus() -> (canMakePayments: Bool, canSetupCards: Bool) {
-    return (PKPaymentAuthorizationController.canMakePayments(), PKPaymentAuthorizationController.canMakePayments(usingNetworks: supportedNetworks))
+    return (
+      PKPaymentAuthorizationController.canMakePayments(),
+      PKPaymentAuthorizationController.canMakePayments(usingNetworks: supportedNetworks)
+    )
   }
 }
