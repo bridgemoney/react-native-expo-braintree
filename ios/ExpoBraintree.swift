@@ -207,7 +207,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
           reject(
             EXCEPTION_TYPES.APPLE_PAY_REQUEST_EXCEPTION.rawValue,
             ERROR_TYPES.APPLE_PAY_REQUEST_ERROR.rawValue,
-            NSError(domain: error.localizedDescription, code: -1)
+            NSError(domain: error!.localizedDescription, code: -1)
           )
           return
         }
@@ -342,7 +342,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
         self.reject!(
           EXCEPTION_TYPES.APPLE_PAY_TOKEN_EXCEPTION.rawValue,
           ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue,
-          NSError(domain: error.localizedDescription, code: -1)
+          NSError(domain: error!.localizedDescription, code: -1)
         )
         completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
       }
