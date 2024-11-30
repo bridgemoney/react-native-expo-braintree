@@ -345,6 +345,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
           NSError(domain: error!.localizedDescription, code: -1)
         )
         completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
+        return
       }
 
       guard let appNonce = applePayNonce else {
@@ -354,6 +355,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
           NSError(domain: ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue, code: -1)
         )
         completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
+        return
       }
 
       self.resolve!(["nonce": appNonce.nonce])
