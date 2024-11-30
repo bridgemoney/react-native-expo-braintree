@@ -202,7 +202,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
     let status = applePayStatus()
 
     if status.canMakePayments {
-      self.applePayClient!.makePaymentRequest { (request, error) in
+      self.applePayClient!.makePaymentRequest(completion: { (request, error) in
         guard error == nil else {
           reject(
             EXCEPTION_TYPES.APPLE_PAY_REQUEST_EXCEPTION.rawValue,
@@ -253,7 +253,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
           )
         }
 
-      }
+      })
     } else {
       reject(
         EXCEPTION_TYPES.APPLE_PAY_PAYMENT_EXCEPTION.rawValue,
