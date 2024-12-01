@@ -337,30 +337,32 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
     didAuthorizePayment payment: PKPayment,
     handler completion: @escaping (PKPaymentAuthorizationResult) -> Void
   ) {
-    self.applePayClient!.tokenize(payment) { (applePayNonce, error) in
-      guard error == nil else {
-        self.reject!(
-          EXCEPTION_TYPES.APPLE_PAY_TOKEN_EXCEPTION.rawValue,
-          ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue,
-          NSError(domain: error!.localizedDescription, code: -1)
-        )
-        completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
-        return
-      }
+    self.applePayClient!.tokenize(
+      payment,
+      completion: { (applePayNonce, error) in
+        guard error == nil else {
+          self.reject!(
+            EXCEPTION_TYPES.APPLE_PAY_TOKEN_EXCEPTION.rawValue,
+            ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue,
+            NSError(domain: error!.localizedDescription, code: -1)
+          )
+          completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
+          return
+        }
 
-      guard let appNonce = applePayNonce else {
-        self.reject!(
-          EXCEPTION_TYPES.APPLE_PAY_TOKEN_EXCEPTION.rawValue,
-          ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue,
-          NSError(domain: ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue, code: -1)
-        )
-        completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
-        return
-      }
+        guard let appNonce = applePayNonce else {
+          self.reject!(
+            EXCEPTION_TYPES.APPLE_PAY_TOKEN_EXCEPTION.rawValue,
+            ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue,
+            NSError(domain: ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue, code: -1)
+          )
+          completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
+          return
+        }
 
-      self.resolve!(["nonce": appNonce.nonce])
-      completion(PKPaymentAuthorizationResult(status: .success, errors: nil))
-    }
+        self.resolve!(["nonce": appNonce.nonce])
+        completion(PKPaymentAuthorizationResult(status: .success, errors: nil))
+      })
 
     self.resetPromise()
   }
@@ -370,7 +372,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
       self.paymentController!.dismiss(completion: nil)
     }
 
-    if self.reject != nil {
+    if self.resolve != nil {
       self.resolve!(["cancelled": true])
     }
 
