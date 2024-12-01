@@ -42,7 +42,7 @@ enum ERROR_TYPES: String {
   case APPLE_PAY_REQUEST_AUTHORIZATION_ERROR = "APPLE_PAY_REQUEST_AUTHORIZATION_ERROR"
 }
 @objc(ExpoBraintree)
-class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
+class ExpoBraintree: NSObject, PKPaymentAuthorizationViewControllerDelegate {
 
   let supportedNetworks: [PKPaymentNetwork] = [
     .amex,
@@ -55,7 +55,6 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
   var resolve: RCTPromiseResolveBlock? = nil
   var reject: RCTPromiseRejectBlock? = nil
   var applePayClient: BTApplePayClient? = nil
-  var paymentController: PKPaymentAuthorizationController? = nil
   var apiClient: BTAPIClient? = nil
 
   @objc(requestBillingAgreement:withResolver:withRejecter:)
@@ -197,12 +196,12 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
     self.reject = reject
 
     self.apiClient = BTAPIClient(authorization: clientToken)
-    self.applePayClient = BTApplePayClient(apiClient: self.apiClient!)
+    let applePayClient = BTApplePayClient(apiClient: self.apiClient!)
 
     let status = applePayStatus()
 
     if status.canMakePayments {
-      self.applePayClient!.makePaymentRequest(completion: { (request, error) in
+      applePayClient.makePaymentRequest(completion: { (request, error) in
         guard error == nil else {
           reject(
             EXCEPTION_TYPES.APPLE_PAY_REQUEST_EXCEPTION.rawValue,
@@ -231,12 +230,11 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
         paymentRequest.paymentSummaryItems = [paymentItem]
         paymentRequest.requiredBillingContactFields = [.postalAddress]
 
-        if let pc = PKPaymentAuthorizationController(paymentRequest: paymentRequest)
-          as PKPaymentAuthorizationController?
+        if let pc = PKPaymentAuthorizationViewController(paymentRequest: paymentRequest)
+          as PKPaymentAuthorizationViewController?
         {
-          self.paymentController = pc
-          self.paymentController!.delegate = self
-          self.paymentController!.present(completion: { (presented: Bool) in
+          pc.delegate = self
+          pc.present(completion: { (presented: Bool) in
             if !presented {
               reject(
                 EXCEPTION_TYPES.APPLE_PAY_SHEET_EXCEPTION.rawValue,
@@ -332,12 +330,14 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
     }
   }
 
-  @objc internal func paymentAuthorizationController(
-    _ controller: PKPaymentAuthorizationController,
+  @objc internal func paymentAuthorizationViewController(
+    _ controller: PKPaymentAuthorizationViewController,
     didAuthorizePayment payment: PKPayment,
     handler completion: @escaping (PKPaymentAuthorizationResult) -> Void
   ) {
-    self.applePayClient!.tokenize(
+    let applePayClient = BTApplePayClient(apiClient: self.apiClient!)
+
+    applePayClient.tokenize(
       payment,
       completion: { (applePayNonce, error) in
         guard error == nil else {
@@ -367,10 +367,10 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
     self.resetPromise()
   }
 
-  func paymentAuthorizationControllerDidFinish(_ controller: PKPaymentAuthorizationController) {
-    if self.paymentController != nil {
-      self.paymentController!.dismiss(completion: nil)
-    }
+  func paymentAuthorizationViewControllerDidFinish(
+    _ controller: PKPaymentAuthorizationViewController
+  ) {
+    controller.dismiss(completion: nil)
 
     if self.resolve != nil {
       self.resolve!(["cancelled": true])
