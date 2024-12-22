@@ -93,4 +93,5 @@ dependencies {
   implementation 'com.braintreepayments.api:data-collector:4.49.1'
   implementation 'com.braintreepayments.api:paypal:4.49.1'
   implementation 'com.braintreepayments.api:card:4.49.1'
+  implementation 'com.braintreepayments.api:google-pay:4.49.1'
 }

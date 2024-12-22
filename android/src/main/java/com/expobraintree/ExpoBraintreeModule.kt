@@ -3,6 +3,7 @@ package com.expobraintree
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.fragment.app.FragmentActivity
 import com.braintreepayments.api.BraintreeClient
 import com.braintreepayments.api.BraintreeRequestCodes
@@ -11,10 +12,15 @@ import com.braintreepayments.api.Card
 import com.braintreepayments.api.CardClient
 import com.braintreepayments.api.CardNonce
 import com.braintreepayments.api.DataCollector
+import com.braintreepayments.api.GooglePayClient
+import com.braintreepayments.api.GooglePayListener
+import com.braintreepayments.api.GooglePayRequest
 import com.braintreepayments.api.PayPalAccountNonce
 import com.braintreepayments.api.PayPalCheckoutRequest
 import com.braintreepayments.api.PayPalClient
 import com.braintreepayments.api.PayPalVaultRequest
+import com.braintreepayments.api.PaymentMethodNonce
+import com.braintreepayments.api.UserCanceledException
 import com.facebook.react.bridge.ActivityEventListener
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.Promise
@@ -24,13 +30,15 @@ import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
 
 class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext), ActivityEventListener, LifecycleEventListener {
+    ReactContextBaseJavaModule(reactContext), ActivityEventListener, LifecycleEventListener,
+  GooglePayListener {
   val NAME = "ExpoBraintree"
   private lateinit var promiseRef: Promise
   private lateinit var currentActivityRef: FragmentActivity
   private var reactContextRef: Context
   private lateinit var braintreeClientRef: BraintreeClient
   private lateinit var payPalClientRef: PayPalClient
+  private lateinit var googlePayClientRef: GooglePayClient
   private val paypalRebornModuleHandlers: PaypalRebornModuleHandlers = PaypalRebornModuleHandlers()
 
   init {
@@ -105,6 +113,45 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
           handlePayPalAccountNonceResult(null, e)
         }
       } else {
+        throw Exception()
+      }
+    } catch (ex: Exception) {
+      localPromise.reject(
+          EXCEPTION_TYPES.KOTLIN_EXCEPTION.value,
+          ERROR_TYPES.API_CLIENT_INITIALIZATION_ERROR.value,
+          PaypalDataConverter.createError(EXCEPTION_TYPES.KOTLIN_EXCEPTION.value, ex.message)
+      )
+    }
+  }
+
+  @ReactMethod
+  fun requestGooglePayPayment(data: ReadableMap, localPromise: Promise) {
+    try {
+      promiseRef = localPromise
+      currentActivityRef = getCurrentActivity() as FragmentActivity
+      braintreeClientRef = BraintreeClient(currentActivityRef, data.getString("clientToken") ?: "")
+
+      Log.d("ExpoBraintree", "BT Initialized")
+      Log.d("ExpoBraintree", "Before GPay initialization")
+
+      googlePayClientRef = GooglePayClient(currentActivityRef, braintreeClientRef)
+
+      Log.d("ExpoBraintree", "initialized all clients")
+
+      if (this::currentActivityRef.isInitialized && this::braintreeClientRef.isInitialized) {
+        Log.d("ExpoBraintree", "check if GPay ready")
+
+        googlePayClientRef.isReadyToPay(currentActivityRef) { isReadyToPay, error ->
+          if (isReadyToPay) {
+            Log.d("ExpoBraintree", "GPay is ready!")
+            val request: GooglePayRequest = PaypalDataConverter.createGooglePayRequest(data)
+            googlePayClientRef.requestPayment(currentActivityRef, request)
+          } else {
+            Log.e("ExpoBraintree", "Cannot check if GPay ready", error)
+          }
+        }
+      } else {
+        Log.d("ExpoBraintree", "Some crap happened")
         throw Exception()
       }
     } catch (ex: Exception) {
@@ -204,4 +251,24 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
       resultCode: Int,
       intent: Intent?
   ) {}
+
+  override fun onGooglePaySuccess(paymentMethodNonce: PaymentMethodNonce) {
+    promiseRef.resolve(PaypalDataConverter.createGooglePayDataNonce(paymentMethodNonce))
+  }
+
+  override fun onGooglePayFailure(error: java.lang.Exception) {
+    if (error is UserCanceledException) {
+      promiseRef.reject(
+        EXCEPTION_TYPES.USER_CANCEL_EXCEPTION.value,
+        ERROR_TYPES.USER_CANCEL_TRANSACTION_ERROR.value,
+        PaypalDataConverter.createError(EXCEPTION_TYPES.USER_CANCEL_EXCEPTION.value, error.message)
+      )
+    } else {
+      promiseRef.reject(
+        EXCEPTION_TYPES.GPAY_EXCEPTION.value,
+        ERROR_TYPES.GPAY_ERROR.value,
+        PaypalDataConverter.createError(EXCEPTION_TYPES.GPAY_EXCEPTION.value, error.message)
+      )
+    }
+  }
 }

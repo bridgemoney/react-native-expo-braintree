@@ -42,7 +42,7 @@ enum ERROR_TYPES: String {
   case APPLE_PAY_REQUEST_AUTHORIZATION_ERROR = "APPLE_PAY_REQUEST_AUTHORIZATION_ERROR"
 }
 @objc(ExpoBraintree)
-class ExpoBraintree: NSObject, PKPaymentAuthorizationViewControllerDelegate {
+class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
 
   let supportedNetworks: [PKPaymentNetwork] = [
     .amex,
@@ -54,7 +54,6 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationViewControllerDelegate {
   ]
   var resolve: RCTPromiseResolveBlock? = nil
   var reject: RCTPromiseRejectBlock? = nil
-  var applePayClient: BTApplePayClient? = nil
   var apiClient: BTAPIClient? = nil
 
   @objc(requestBillingAgreement:withResolver:withRejecter:)
@@ -230,8 +229,8 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationViewControllerDelegate {
         paymentRequest.paymentSummaryItems = [paymentItem]
         paymentRequest.requiredBillingContactFields = [.postalAddress]
 
-        if let pc = PKPaymentAuthorizationViewController(paymentRequest: paymentRequest)
-          as PKPaymentAuthorizationViewController?
+        if let pc = PKPaymentAuthorizationController(paymentRequest: paymentRequest)
+          as PKPaymentAuthorizationController?
         {
           pc.delegate = self
           pc.present(completion: { (presented: Bool) in
@@ -330,8 +329,8 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationViewControllerDelegate {
     }
   }
 
-  @objc internal func paymentAuthorizationViewController(
-    _ controller: PKPaymentAuthorizationViewController,
+  @objc internal func paymentAuthorizationController(
+    _ controller: paymentAuthorizationController,
     didAuthorizePayment payment: PKPayment,
     handler completion: @escaping (PKPaymentAuthorizationResult) -> Void
   ) {
@@ -367,8 +366,8 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationViewControllerDelegate {
     self.resetPromise()
   }
 
-  func paymentAuthorizationViewControllerDidFinish(
-    _ controller: PKPaymentAuthorizationViewController
+  func paymentAuthorizationControllerDidFinish(
+    _ controller: PKPaymentAuthorizationController
   ) {
     controller.dismiss(completion: nil)
 

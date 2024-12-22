@@ -115,6 +115,19 @@ export type RequestApplePayPaymentOptions = {
   clientToken: string;
 };
 
+export type RequestGooglePayPaymentOptions = {
+  amount: string;
+  clientToken: string;
+  currencyCode?: string;
+  isPhoneNumberRequired?: boolean;
+  isShippingAddressRequired?: boolean;
+  env?: 'test' | 'production';
+};
+
 export type BTApplePayTokenizationNonceResult = {
+  nonce: string;
+};
+
+export type BTGooglePayTokenizationNonceResult = {
   nonce: string;
 };
