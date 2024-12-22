@@ -6,11 +6,8 @@
 //
 
 import Braintree
-
 import Foundation
-
 import PassKit
-
 import React
 
 enum EXCEPTION_TYPES: String {
@@ -42,7 +39,7 @@ enum ERROR_TYPES: String {
   case APPLE_PAY_REQUEST_AUTHORIZATION_ERROR = "APPLE_PAY_REQUEST_AUTHORIZATION_ERROR"
 }
 @objc(ExpoBraintree)
-class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
+class ExpoBraintree: NSObject {
 
   let supportedNetworks: [PKPaymentNetwork] = [
     .amex,
@@ -174,12 +171,13 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
 
   @objc(requestApplePayPayment:withResolver:withRejecter:)
   func requestApplePayPayment(
-    options: [String: String], resolve: @escaping RCTPromiseResolveBlock,
+    options: [String: String],
+    resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
     let clientToken: String = options["clientToken"] ?? ""
     let merchantName: String? = options["merchantName"] ?? nil
-    let amount: String = options["amount"] as! String
+    let amount: String = options["amount"]!
     let countryCode: String = options["countryCode"] ?? "US"
     let currencyCode: String = options["currencyCode"] ?? "USD"
 
@@ -227,7 +225,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
         paymentRequest.merchantCapabilities = PKMerchantCapability.capability3DS
         paymentRequest.supportedNetworks = self.supportedNetworks
         paymentRequest.paymentSummaryItems = [paymentItem]
-        paymentRequest.requiredBillingContactFields = [.postalAddress]
+        paymentRequest.requiredBillingContactFields = [PKContactField.postalAddress]
 
         if let pc = PKPaymentAuthorizationController(paymentRequest: paymentRequest)
           as PKPaymentAuthorizationController?
@@ -329,8 +327,24 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
     }
   }
 
-  @objc internal func paymentAuthorizationController(
-    _ controller: paymentAuthorizationController,
+  private func applePayStatus() -> (canMakePayments: Bool, canSetupCards: Bool) {
+    return (
+      PKPaymentAuthorizationController.canMakePayments(),
+      PKPaymentAuthorizationController.canMakePayments(usingNetworks: supportedNetworks)
+    )
+  }
+}
+
+extension ExpoBraintree: Promiseable {
+  func resetPromises() {
+    self.resolve = nil
+    self.reject = nil
+  }
+}
+
+extension ExpoBraintree: PKPaymentAuthorizationControllerDelegate {
+  @objc func paymentAuthorizationController(
+    _ controller: PKPaymentAuthorizationController,
     didAuthorizePayment payment: PKPayment,
     handler completion: @escaping (PKPaymentAuthorizationResult) -> Void
   ) {
@@ -345,6 +359,7 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
             ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue,
             NSError(domain: error!.localizedDescription, code: -1)
           )
+          self.resetPromises()
           completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
           return
         }
@@ -355,15 +370,15 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
             ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue,
             NSError(domain: ERROR_TYPES.APPLE_PAY_TOKEN_ERROR.rawValue, code: -1)
           )
+          self.resetPromises()
           completion(PKPaymentAuthorizationResult(status: .failure, errors: nil))
           return
         }
 
         self.resolve!(["nonce": appNonce.nonce])
+        self.resetPromises()
         completion(PKPaymentAuthorizationResult(status: .success, errors: nil))
       })
-
-    self.resetPromise()
   }
 
   func paymentAuthorizationControllerDidFinish(
@@ -375,18 +390,6 @@ class ExpoBraintree: NSObject, PKPaymentAuthorizationControllerDelegate {
       self.resolve!(["cancelled": true])
     }
 
-    self.resetPromise()
-  }
-
-  private func resetPromise() {
-    self.reject = nil
-    self.resolve = nil
-  }
-
-  private func applePayStatus() -> (canMakePayments: Bool, canSetupCards: Bool) {
-    return (
-      PKPaymentAuthorizationController.canMakePayments(),
-      PKPaymentAuthorizationController.canMakePayments(usingNetworks: supportedNetworks)
-    )
+    self.resetPromises()
   }
 }

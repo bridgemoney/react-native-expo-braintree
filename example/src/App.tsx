@@ -14,6 +14,7 @@ import {
   requestOneTimePayment,
   tokenizeCardData,
   requestGooglePayPayment,
+  requestApplePayPayment,
 } from 'react-native-expo-braintree';
 
 export const clientToken = 'sandbox_9dbg82cq_dcpspy2brwdjr3qn';
@@ -129,7 +130,30 @@ export default function App() {
             }
           }}
         />
-      ) : null}
+      ) : (
+        <Button
+          title="Click Me To request ApplePay Payment"
+          onPress={async () => {
+            try {
+              setIsLoading(true);
+              const result = await requestApplePayPayment({
+                clientToken,
+                amount: '5',
+                currencyCode: 'USD',
+                countryCode: 'US',
+                merchantName: 'BridgeMoney, Inc',
+              });
+              setIsLoading(false);
+              setResult(JSON.stringify(result));
+              console.log(JSON.stringify(result));
+            } catch (ex) {
+              console.log(JSON.stringify(ex));
+            } finally {
+              setIsLoading(false);
+            }
+          }}
+        />
+      )}
       {isLoading && <ActivityIndicator />}
       <Text>{result}</Text>
     </View>
