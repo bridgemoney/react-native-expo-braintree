@@ -129,12 +129,8 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
     try {
       promiseRef = localPromise
       currentActivityRef = getCurrentActivity() as FragmentActivity
-      braintreeClientRef = BraintreeClient(currentActivityRef, data.getString("clientToken") ?: "")
-
-      Log.d("ExpoBraintree", "BT Initialized")
-      Log.d("ExpoBraintree", "Before GPay initialization")
-
-      googlePayClientRef = GooglePayClient(currentActivityRef, braintreeClientRef)
+      braintreeClientRef = BraintreeClient(this.reactContextRef, data.getString("clientToken") ?: "")
+      googlePayClientRef = GooglePayClient(braintreeClientRef)
 
       Log.d("ExpoBraintree", "initialized all clients")
 
@@ -188,7 +184,7 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  public fun handleCardTokenizeResult(
+  fun handleCardTokenizeResult(
       cardNonce: CardNonce?,
       error: Exception?,
   ) {
@@ -201,7 +197,7 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
     }
   }
 
-  public fun handlePayPalAccountNonceResult(
+  fun handlePayPalAccountNonceResult(
       payPalAccountNonce: PayPalAccountNonce?,
       error: Exception?,
   ) {
