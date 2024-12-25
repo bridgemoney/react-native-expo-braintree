@@ -93,6 +93,7 @@ export async function requestApplePayPayment(
 export async function requestGooglePayPayment({
   isShippingAddressRequired = false,
   isPhoneNumberRequired = false,
+  allowedCountryCodes = [],
   ...rest
 }: RequestGooglePayPaymentOptions): Promise<
   BTGooglePayTokenizationNonceResult | BTPayPalError
@@ -102,6 +103,7 @@ export async function requestGooglePayPayment({
       await ExpoBraintree.requestGooglePayPayment({
         isShippingAddressRequired,
         isPhoneNumberRequired,
+        allowedCountryCodes,
         ...rest,
       });
     return result;

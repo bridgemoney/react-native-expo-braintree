@@ -121,6 +121,7 @@ export type RequestGooglePayPaymentOptions = {
   currencyCode?: string;
   isPhoneNumberRequired?: boolean;
   isShippingAddressRequired?: boolean;
+  allowedCountryCodes?: string[];
   env?: 'test' | 'production';
 };
 
