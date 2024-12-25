@@ -20,11 +20,12 @@ https://developer.paypal.com/braintree/docs/start/overview
 |               2.1.1                |        v4.41.x        |      v6.17.0      |         21          |      14.0       |
 
 | React Native Expo Braintree Version | Braintree Android SDK | Braintree IOS SDK | Minimum SDK Android | Minimum SDK IOS |
-| :--------------------: | :-------------------: | :---------------: | :-----------------: | :-------------: |
-|         2.2.0          |        v4.41.x        |      v6.17.0      |         21          |      14.0       |
-|         2.2.1          |        v4.41.x        |      v6.17.0      |         21          |      14.0       |
-|         2.2.2          |        v4.41.x        |      v6.17.0      |         21          |      14.0       |
-|         2.3.0          |        v4.41.x        |      v6.23.3      |         21          |      14.0       |
+|:-----------------------------------:|:---------------------:|:-----------------:| :-----------------: | :-------------: |
+|                2.2.0                |        v4.41.x        |      v6.17.0      |         21          |      14.0       |
+|                2.2.1                |        v4.41.x        |      v6.17.0      |         21          |      14.0       |
+|                2.2.2                |        v4.41.x        |      v6.17.0      |         21          |      14.0       |
+|                2.3.0                |        v4.41.x        |      v6.23.3      |         21          |      14.0       |
+|                2.6.0                |        v4.49.x        |      v6.25.0      |         21          |      14.0       |
 
 
 ## Integration
@@ -78,9 +79,9 @@ cd ios
 pod install
 ```
 ###### Configure a new URL scheme
-Add a bundle url scheme {BUNDLE_IDENTIFIER}.braintree in your app Info via XCode or manually in the Info.plist. In your Info.plist, you should have something like: 
+Add a bundle url scheme {BUNDLE_IDENTIFIER}.braintree in your app Info via XCode or manually in the Info.plist. In your Info.plist, you should have something like:
 
-```xml 
+```xml
 <key>CFBundleURLTypes</key>
 <array>
     <dict>
@@ -146,7 +147,7 @@ import Foundation
     if ([url.scheme localizedCaseInsensitiveCompare:[ExpoBraintreeConfig getPaymentUrlScheme]] == NSOrderedSame) {
         return [ExpoBraintreeConfig handleUrl:url];
     }
-    
+
     return [RCTLinkingManager application:application openURL:url options:options];
 }
 
@@ -214,4 +215,3 @@ const result: string = await getDeviceDataFromDataCollector("Token")
 ## TODO
 
 - [ ] Add Missing Methods from Braintree SDK ApplePay, Google Pay, 3D
-
