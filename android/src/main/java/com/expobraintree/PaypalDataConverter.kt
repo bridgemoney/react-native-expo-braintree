@@ -7,10 +7,15 @@ import com.braintreepayments.api.PayPalVaultRequest
 import com.braintreepayments.api.PostalAddress
 import com.braintreepayments.api.Card;
 import com.braintreepayments.api.CardNonce;
+import com.braintreepayments.api.GooglePayRequest
+import com.braintreepayments.api.PaymentMethodNonce
 
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
+import com.google.android.gms.wallet.ShippingAddressRequirements
+import com.google.android.gms.wallet.TransactionInfo
+import com.google.android.gms.wallet.WalletConstants
 
 
 class PaypalDataConverter {
@@ -51,6 +56,12 @@ class PaypalDataConverter {
       result.putString("lastTwo", cardNonce.getLastTwo())
       result.putString("expirationMonth", cardNonce.getExpirationMonth())
       result.putString("expirationYear", cardNonce.getExpirationYear())
+      return result
+    }
+
+    fun createGooglePayDataNonce(gpayNonce: PaymentMethodNonce): WritableMap {
+      val result: WritableMap = Arguments.createMap()
+      result.putString("nonce", gpayNonce.string)
       return result
     }
 
@@ -140,6 +151,36 @@ class PaypalDataConverter {
       return card
     }
 
+    fun createGooglePayRequest(options: ReadableMap): GooglePayRequest {
+      val req = GooglePayRequest()
 
+      req.transactionInfo = TransactionInfo.newBuilder()
+        .setTotalPrice(options.getString("amount") ?: "0")
+        .setTotalPriceStatus(WalletConstants.TOTAL_PRICE_STATUS_FINAL)
+        .setCurrencyCode(options.getString("currencyCode") ?: "USD")
+        .build()
+      req.isShippingAddressRequired = options.getBoolean("isShippingAddressRequired")
+      req.isPhoneNumberRequired = options.getBoolean("isPhoneNumberRequired")
+      req.isBillingAddressRequired = true
+
+      if (req.isShippingAddressRequired) {
+        if (options.hasKey("allowedCountryCodes")) {
+          req.shippingAddressRequirements = ShippingAddressRequirements
+            .newBuilder()
+            .addAllowedCountryCodes(
+              options.getArray("allowedCountryCodes")!!
+                .toArrayList()
+                .map { o -> o.toString() }
+            )
+            .build()
+        }
+      }
+
+      if (options.hasKey("env")) {
+        req.environment = options.getString("env")
+      }
+
+      return req
+    }
   }
 }

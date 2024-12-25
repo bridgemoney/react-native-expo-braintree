@@ -10,6 +10,10 @@ RCT_EXTERN_METHOD(requestOneTimePayment:(NSDictionary*)options
                  withResolver:(RCTPromiseResolveBlock)resolve
                  withRejecter:(RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(requestApplePayPayment:(NSDictionary*)options
+                 withResolver:(RCTPromiseResolveBlock)resolve
+                 withRejecter:(RCTPromiseRejectBlock)reject)
+
 RCT_EXTERN_METHOD(tokenizeCardData:(NSDictionary*)options
                  withResolver:(RCTPromiseResolveBlock)resolve
                  withRejecter:(RCTPromiseRejectBlock)reject)
@@ -24,4 +28,3 @@ RCT_EXTERN_METHOD(getDeviceDataFromDataCollector:(NSString*)clientToken
 }
 
 @end
-

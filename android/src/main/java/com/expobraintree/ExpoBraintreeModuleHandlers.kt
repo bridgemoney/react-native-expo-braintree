@@ -55,7 +55,6 @@ class PaypalRebornModuleHandlers {
     mPromise.resolve(result)
   }
 
-
   public fun onCardTokenizeFailure(error: Exception, mPromise: Promise) {
     mPromise.reject(EXCEPTION_TYPES.TOKENIZE_EXCEPTION.value,
       ERROR_TYPES.CARD_TOKENIZATION_ERROR.value,

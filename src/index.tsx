@@ -7,6 +7,10 @@ import {
   type BTPayPalGetDeviceDataResult,
   type BTCardTokenizationNonceResult,
   type TokenizeCardOptions,
+  type RequestApplePayPaymentOptions,
+  type BTApplePayTokenizationNonceResult,
+  type RequestGooglePayPaymentOptions,
+  type BTGooglePayTokenizationNonceResult,
 } from './types';
 
 const LINKING_ERROR =
@@ -68,6 +72,38 @@ export async function tokenizeCardData(
   try {
     const result: BTCardTokenizationNonceResult =
       await ExpoBraintree.tokenizeCardData(options);
+    return result;
+  } catch (ex: unknown) {
+    return ex as BTPayPalError;
+  }
+}
+
+export async function requestApplePayPayment(
+  options: RequestApplePayPaymentOptions
+): Promise<BTApplePayTokenizationNonceResult | BTPayPalError> {
+  try {
+    const result: BTApplePayTokenizationNonceResult =
+      await ExpoBraintree.requestApplePayPayment(options);
+    return result;
+  } catch (ex: unknown) {
+    return ex as BTPayPalError;
+  }
+}
+
+export async function requestGooglePayPayment({
+  isShippingAddressRequired = false,
+  isPhoneNumberRequired = false,
+  ...rest
+}: RequestGooglePayPaymentOptions): Promise<
+  BTGooglePayTokenizationNonceResult | BTPayPalError
+> {
+  try {
+    const result: BTGooglePayTokenizationNonceResult =
+      await ExpoBraintree.requestGooglePayPayment({
+        isShippingAddressRequired,
+        isPhoneNumberRequired,
+        ...rest,
+      });
     return result;
   } catch (ex: unknown) {
     return ex as BTPayPalError;
