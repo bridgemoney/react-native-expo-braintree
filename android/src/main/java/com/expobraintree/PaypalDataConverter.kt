@@ -13,6 +13,7 @@ import com.braintreepayments.api.PaymentMethodNonce
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableMap
+import com.google.android.gms.wallet.ShippingAddressRequirements
 import com.google.android.gms.wallet.TransactionInfo
 import com.google.android.gms.wallet.WalletConstants
 
@@ -160,6 +161,20 @@ class PaypalDataConverter {
         .build()
       req.isShippingAddressRequired = options.getBoolean("isShippingAddressRequired")
       req.isPhoneNumberRequired = options.getBoolean("isPhoneNumberRequired")
+      req.isBillingAddressRequired = true
+
+      if (req.isShippingAddressRequired) {
+        if (options.hasKey("allowedCountryCodes")) {
+          req.shippingAddressRequirements = ShippingAddressRequirements
+            .newBuilder()
+            .addAllowedCountryCodes(
+              options.getArray("allowedCountryCodes")!!
+                .toArrayList()
+                .map { o -> o.toString() }
+            )
+            .build()
+        }
+      }
 
       if (options.hasKey("env")) {
         req.environment = options.getString("env")

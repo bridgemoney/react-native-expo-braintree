@@ -28,6 +28,9 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
+import com.google.android.gms.wallet.AutoResolveHelper
+import com.google.android.gms.wallet.PaymentData
+import com.google.android.gms.common.api.Status;
 
 class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext), ActivityEventListener, LifecycleEventListener,
@@ -131,15 +134,12 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
       currentActivityRef = getCurrentActivity() as FragmentActivity
       braintreeClientRef = BraintreeClient(this.reactContextRef, data.getString("clientToken") ?: "")
       googlePayClientRef = GooglePayClient(braintreeClientRef)
-
-      Log.d("ExpoBraintree", "initialized all clients")
+      googlePayClientRef.setListener(this)
 
       if (this::currentActivityRef.isInitialized && this::braintreeClientRef.isInitialized) {
-        Log.d("ExpoBraintree", "check if GPay ready")
 
         googlePayClientRef.isReadyToPay(currentActivityRef) { isReadyToPay, error ->
           if (isReadyToPay) {
-            Log.d("ExpoBraintree", "GPay is ready!")
             val request: GooglePayRequest = PaypalDataConverter.createGooglePayRequest(data)
             googlePayClientRef.requestPayment(currentActivityRef, request)
           } else {
@@ -246,7 +246,40 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
       requestCode: Int,
       resultCode: Int,
       intent: Intent?
-  ) {}
+  ) {
+    try {
+      when (requestCode) {
+        BraintreeRequestCodes.GOOGLE_PAY -> when (resultCode) {
+          Activity.RESULT_OK -> {
+            val paymentData = PaymentData.getFromIntent(intent!!)
+            googlePayClientRef.tokenize(paymentData) { nonce, error ->
+              if (nonce != null) {
+                this.onGooglePaySuccess(nonce)
+              } else if (error != null) {
+                this.onGooglePayFailure(error)
+              } else {
+                promiseRef.reject(
+                  EXCEPTION_TYPES.GPAY_EXCEPTION.value,
+                  ERROR_TYPES.GPAY_ERROR.value,
+                  PaypalDataConverter.createError(EXCEPTION_TYPES.GPAY_EXCEPTION.value, "Unable to tokenize GPay PaymentData")
+                )
+              }
+            }
+          }
+
+          Activity.RESULT_CANCELED ->
+            onGooglePayFailure(RuntimeException("User cancelled"))
+
+          AutoResolveHelper.RESULT_ERROR -> {
+            val status: Status? = AutoResolveHelper.getStatusFromIntent(intent)
+            onGooglePayFailure(RuntimeException("Status: " + status?.statusMessage))
+          }
+        }
+      }
+    } catch (e: java.lang.Exception) {
+      promiseRef.reject(e)
+    }
+  }
 
   override fun onGooglePaySuccess(paymentMethodNonce: PaymentMethodNonce) {
     promiseRef.resolve(PaypalDataConverter.createGooglePayDataNonce(paymentMethodNonce))
