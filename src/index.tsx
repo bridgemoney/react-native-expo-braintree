@@ -1,12 +1,18 @@
 import { NativeModules, Platform } from 'react-native';
 import type {
+  BTApplePayError,
+  BTApplePayTokenizationNonceResult,
   BTCardTokenizationNonceResult,
+  BTGooglePayError,
+  BTGooglePayTokenizationNonceResult,
   BTPayPalAccountNonceResult,
   BTPayPalError,
   BTPayPalGetDeviceDataResult,
   BTVenmoError,
   BTVenmoNonceResult,
+  RequestApplePayPaymentOptions,
   RequestBillingAgreementOptions,
+  RequestGooglePayPaymentOptions,
   RequestOneTimePaymentOptions,
   RequestVenmoNonceOptions,
   TokenizeCardOptions,
@@ -92,6 +98,40 @@ export async function requestVenmoNonce(
     return result;
   } catch (ex: unknown) {
     return ex as BTVenmoError;
+  }
+}
+
+export async function requestApplePayPayment(
+  options: RequestApplePayPaymentOptions
+): Promise<BTApplePayTokenizationNonceResult | BTApplePayError> {
+  try {
+    const result: BTApplePayTokenizationNonceResult =
+      await ExpoBraintree.requestApplePayPayment(options);
+    return result;
+  } catch (ex: unknown) {
+    return ex as BTApplePayError;
+  }
+}
+
+export async function requestGooglePayPayment({
+  isShippingAddressRequired = false,
+  isPhoneNumberRequired = false,
+  allowedCountryCodes = [],
+  ...rest
+}: RequestGooglePayPaymentOptions): Promise<
+  BTGooglePayTokenizationNonceResult | BTGooglePayError
+> {
+  try {
+    const result: BTGooglePayTokenizationNonceResult =
+      await ExpoBraintree.requestGooglePayPayment({
+        isShippingAddressRequired,
+        isPhoneNumberRequired,
+        allowedCountryCodes,
+        ...rest,
+      });
+    return result;
+  } catch (ex: unknown) {
+    return ex as BTGooglePayError;
   }
 }
 

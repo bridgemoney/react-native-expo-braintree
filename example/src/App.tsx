@@ -3,6 +3,7 @@ import * as React from 'react';
 import {
   ActivityIndicator,
   Button,
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -15,6 +16,8 @@ import {
   requestOneTimePayment,
   requestVenmoNonce,
   tokenizeCardData,
+  requestGooglePayPayment,
+  requestApplePayPayment,
 } from 'react-native-expo-braintree';
 
 export const clientToken = 'sandbox_x62mvdjj_p8ngm2sczm8248vg';
@@ -129,6 +132,54 @@ export default function App() {
           }
         }}
       />
+      {Platform.OS === 'android' ? (
+        <Button
+          title="Click Me To request GooglePay Payment"
+          onPress={async () => {
+            try {
+              setIsLoading(true);
+              const result = await requestGooglePayPayment({
+                clientToken,
+                amount: '5',
+                currencyCode: 'USD',
+                isPhoneNumberRequired: false,
+                isShippingAddressRequired: false,
+                env: 'test',
+              });
+              setIsLoading(false);
+              setResult(JSON.stringify(result));
+              console.log(JSON.stringify(result));
+            } catch (ex) {
+              console.log(JSON.stringify(ex));
+            } finally {
+              setIsLoading(false);
+            }
+          }}
+        />
+      ) : (
+        <Button
+          title="Click Me To request ApplePay Payment"
+          onPress={async () => {
+            try {
+              setIsLoading(true);
+              const result = await requestApplePayPayment({
+                clientToken,
+                amount: '5',
+                currencyCode: 'USD',
+                countryCode: 'US',
+                merchantName: 'BridgeMoney, Inc',
+              });
+              setIsLoading(false);
+              setResult(JSON.stringify(result));
+              console.log(JSON.stringify(result));
+            } catch (ex) {
+              console.log(JSON.stringify(ex));
+            } finally {
+              setIsLoading(false);
+            }
+          }}
+        />
+      )}
       {isLoading && <ActivityIndicator />}
       <Text>{result}</Text>
     </View>

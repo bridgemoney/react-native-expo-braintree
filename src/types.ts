@@ -28,6 +28,21 @@ export enum VENMO_ERROR_TYPES {
   VENMO_DISABLED_IN_CONFIGURATION = 'VENMO_DISABLED_IN_CONFIGURATION_ERROR',
 }
 
+export enum APPLE_PAY_EXCEPTION_TYPES {
+  APPLE_PAY_SHEET_EXCEPTION = 'ReactNativeExpoBraintree:`Cannot present ApplePay sheet',
+  APPLE_PAY_PAYMENT_EXCEPTION = 'ReactNativeExpoBraintree:`You cannot make ApplePay payments',
+  APPLE_PAY_TOKEN_EXCEPTION = 'ReactNativeExpoBraintree:`Cannot tokenize ApplePay payment',
+  APPLE_PAY_REQUEST_EXCEPTION = 'ReactNativeExpoBraintree:`Cannot create a payment request',
+  APPLE_PAY_MERCHANT_NAME_EXCEPTION = 'ReactNativeExpoBraintree:`You must provide merchantName',
+}
+
+export enum APPLE_PAY_ERROR_TYPES {
+  APPLE_PAY_SHEET_ERROR = 'APPLE_PAY_SHEET_ERROR',
+  APPLE_PAY_PAYMENT_ERROR = 'APPLE_PAY_PAYMENT_ERROR',
+  APPLE_PAY_TOKEN_ERROR = 'APPLE_PAY_TOKEN_ERROR',
+  APPLE_PAY_REQUEST_ERROR = 'APPLE_PAY_REQUEST_ERROR',
+}
+
 export enum BTPayPalCheckoutIntent {
   authorize = 'authorize',
   order = 'order',
@@ -61,6 +76,7 @@ export type RequestBillingAgreementOptions = {
   hasUserLocationConsent?: BoolValue;
   merchantAppLink: string;
 };
+
 export type RequestOneTimePaymentOptions = {
   amount: string;
   intent?: BTPayPalCheckoutIntent;
@@ -152,4 +168,42 @@ export type BTVenmoError = {
   code?: EXCEPTION_TYPES | VENMO_EXCEPTION_TYPES;
   message?: ERROR_TYPES | VENMO_ERROR_TYPES | string;
   domain?: ERROR_TYPES | VENMO_ERROR_TYPES;
+};
+
+export type BTGooglePayError = {
+  code?: EXCEPTION_TYPES;
+  message?: ERROR_TYPES | string;
+  domain?: ERROR_TYPES;
+};
+
+export type BTApplePayError = {
+  code?: EXCEPTION_TYPES | APPLE_PAY_EXCEPTION_TYPES;
+  message?: ERROR_TYPES | APPLE_PAY_ERROR_TYPES | string;
+  domain?: ERROR_TYPES | APPLE_PAY_ERROR_TYPES;
+};
+
+export type RequestApplePayPaymentOptions = {
+  amount: string;
+  merchantName: string;
+  currencyCode?: string;
+  countryCode?: string;
+  clientToken: string;
+};
+
+export type RequestGooglePayPaymentOptions = {
+  amount: string;
+  clientToken: string;
+  currencyCode?: string;
+  isPhoneNumberRequired?: boolean;
+  isShippingAddressRequired?: boolean;
+  allowedCountryCodes?: string[];
+  env?: 'test' | 'production';
+};
+
+export type BTApplePayTokenizationNonceResult = {
+  nonce: string;
+};
+
+export type BTGooglePayTokenizationNonceResult = {
+  nonce: string;
 };
