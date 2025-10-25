@@ -2,6 +2,10 @@ package com.expobraintree
 
 import com.braintreepayments.api.card.Card
 import com.braintreepayments.api.card.CardNonce
+import com.braintreepayments.api.core.PaymentMethodNonce
+import com.braintreepayments.api.googlepay.GooglePayRequest
+import com.braintreepayments.api.googlepay.GooglePayShippingAddressParameters
+import com.braintreepayments.api.googlepay.GooglePayTotalPriceStatus
 import com.braintreepayments.api.paypal.PayPalAccountNonce
 import com.braintreepayments.api.paypal.PayPalCheckoutRequest
 import com.braintreepayments.api.paypal.PayPalPaymentIntent
@@ -133,6 +137,47 @@ class PaypalDataConverter {
         card.postalCode = options.getString("postalCode")
       }
       return card
+    }
+
+    fun createError(domain: String, details: String?): WritableMap {
+      val result: WritableMap = Arguments.createMap();
+      result.putString("domain", domain)
+      result.putString("details", details)
+      return result
+    }
+
+    fun createGooglePayRequest(options: ReadableMap): GooglePayRequest {
+      val req = GooglePayRequest(
+        currencyCode = options.getString("currencyCode") ?: "USD",
+        totalPrice = options.getString("amount") ?: "0",
+        totalPriceStatus = GooglePayTotalPriceStatus.TOTAL_PRICE_STATUS_FINAL,
+        isShippingAddressRequired = options.getBoolean("isShippingAddressRequired"),
+        isPhoneNumberRequired = options.getBoolean("isPhoneNumberRequired"),
+        isBillingAddressRequired = true,
+      )
+
+      if (req.isShippingAddressRequired) {
+        if (options.hasKey("allowedCountryCodes")) {
+          req.shippingAddressParameters = GooglePayShippingAddressParameters(
+            allowedCountryCodes = options.getArray("allowedCountryCodes")!!
+              .toArrayList()
+              .map { o -> o.toString() },
+            isPhoneNumberRequired = options.getBoolean("isPhoneNumberRequired")
+          )
+        }
+      }
+
+      if (options.hasKey("env")) {
+        req.setEnvironment(options.getString("env"))
+      }
+
+      return req
+    }
+
+    fun createGooglePayDataNonce(gpayNonce: PaymentMethodNonce): WritableMap {
+      val result: WritableMap = Arguments.createMap()
+      result.putString("nonce", gpayNonce.string)
+      return result
     }
   }
 }

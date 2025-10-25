@@ -4,13 +4,20 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.fragment.app.FragmentActivity
 import com.braintreepayments.api.card.Card
 import com.braintreepayments.api.card.CardClient
-import com.braintreepayments.api.card.CardNonce
 import com.braintreepayments.api.card.CardResult
 import com.braintreepayments.api.datacollector.DataCollector
 import com.braintreepayments.api.datacollector.DataCollectorResult
+import com.braintreepayments.api.googlepay.GooglePayClient
+import com.braintreepayments.api.googlepay.GooglePayLauncher
+import com.braintreepayments.api.googlepay.GooglePayPaymentAuthRequest
+import com.braintreepayments.api.googlepay.GooglePayPaymentAuthResult
+import com.braintreepayments.api.googlepay.GooglePayReadinessResult
+import com.braintreepayments.api.googlepay.GooglePayRequest
+import com.braintreepayments.api.googlepay.GooglePayResult
 import com.braintreepayments.api.paypal.PayPalAccountNonce
 import com.braintreepayments.api.paypal.PayPalCheckoutRequest
 import com.braintreepayments.api.paypal.PayPalClient
@@ -46,16 +53,37 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
   private var reactContextRef: Context
   private lateinit var payPalClientRef: PayPalClient
   private lateinit var venmoClientRef: VenmoClient
+  private lateinit var googlePayClientRef: GooglePayClient
+
+  private var googlePayLauncher: GooglePayLauncher
 
   init {
     this.reactContextRef = reactContext
     reactContext.addLifecycleEventListener(this)
     reactContext.addActivityEventListener(this)
+    googlePayLauncher = GooglePayLauncher(currentActivityRef) { googlePayPaymentAuthResult: GooglePayPaymentAuthResult ->
+      googlePayClientRef.tokenize(googlePayPaymentAuthResult) { googlePayResult: GooglePayResult ->
+        when (googlePayResult) {
+          is GooglePayResult.Success -> {
+            promiseRef.resolve(PaypalDataConverter.createGooglePayDataNonce(googlePayResult.nonce))
+          }
+
+          is GooglePayResult.Failure -> {
+            moduleHandlers.onGPayFailure(googlePayResult.error, promiseRef)
+          }
+
+          is GooglePayResult.Cancel -> {
+            moduleHandlers.onGPayFailure(RuntimeException("User cancelled"), promiseRef)
+          }
+        }
+      }
+    }
   }
 
   companion object {
     lateinit var payPalLauncher: PayPalLauncher
     lateinit var venmoLauncher: VenmoLauncher
+
     private val moduleHandlers: ExpoBraintreeModuleHandlers = ExpoBraintreeModuleHandlers()
 
     fun init() {
@@ -289,6 +317,56 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
         EXCEPTION_TYPES.KOTLIN_EXCEPTION.value,
         ERROR_TYPES.API_CLIENT_INITIALIZATION_ERROR.value,
         SharedDataConverter.createError(EXCEPTION_TYPES.KOTLIN_EXCEPTION.value, ex.message)
+      )
+    }
+  }
+
+  @ReactMethod
+  fun requestGooglePayPayment(data: ReadableMap, localPromise: Promise) {
+    try {
+      promiseRef = localPromise
+      currentActivityRef = getCurrentActivity() as FragmentActivity
+      googlePayClientRef = GooglePayClient(reactContextRef, data.getString("clientToken") ?: "")
+
+      if (this::currentActivityRef.isInitialized) {
+
+        googlePayClientRef.isReadyToPay(currentActivityRef) { googlePayReadinessResult ->
+          if (googlePayReadinessResult is GooglePayReadinessResult.ReadyToPay) {
+            val request: GooglePayRequest = PaypalDataConverter.createGooglePayRequest(data)
+
+            googlePayClientRef.createPaymentAuthRequest(request) { googlePayPaymentAuthRequest: GooglePayPaymentAuthRequest ->
+              when (googlePayPaymentAuthRequest) {
+                is GooglePayPaymentAuthRequest.ReadyToLaunch -> {
+                  googlePayLauncher.launch(googlePayPaymentAuthRequest)
+                }
+
+                is GooglePayPaymentAuthRequest.Failure -> {
+                  moduleHandlers.onGPayFailure(googlePayPaymentAuthRequest.error, promiseRef)
+                }
+              }
+            }
+          } else {
+            Log.d("ExpoBraintree", "GPay is not ready to pay")
+            localPromise.reject(
+              EXCEPTION_TYPES.GPAY_EXCEPTION.value,
+              ERROR_TYPES.GPAY_NOT_READY_ERROR.value,
+              PaypalDataConverter.createError(EXCEPTION_TYPES.GPAY_EXCEPTION.value, "GPay is not ready to pay")
+            )
+          }
+        }
+      } else {
+        Log.d("ExpoBraintree", "Activity is not initialized")
+        localPromise.reject(
+          EXCEPTION_TYPES.KOTLIN_EXCEPTION.value,
+          ERROR_TYPES.ACTIVITY_NOT_INITIALIZED_ERROR.value,
+          PaypalDataConverter.createError(EXCEPTION_TYPES.KOTLIN_EXCEPTION.value, "Activity is not initialized")
+        )
+      }
+    } catch (ex: Exception) {
+      localPromise.reject(
+        EXCEPTION_TYPES.KOTLIN_EXCEPTION.value,
+        ERROR_TYPES.API_CLIENT_INITIALIZATION_ERROR.value,
+        PaypalDataConverter.createError(EXCEPTION_TYPES.KOTLIN_EXCEPTION.value, ex.message)
       )
     }
   }

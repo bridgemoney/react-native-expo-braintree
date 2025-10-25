@@ -10,6 +10,10 @@ import type {
   RequestOneTimePaymentOptions,
   RequestVenmoNonceOptions,
   TokenizeCardOptions,
+  RequestApplePayPaymentOptions,
+  BTApplePayTokenizationNonceResult,
+  RequestGooglePayPaymentOptions,
+  BTGooglePayTokenizationNonceResult,
 } from './types';
 
 const LINKING_ERROR =
@@ -92,6 +96,40 @@ export async function requestVenmoNonce(
     return result;
   } catch (ex: unknown) {
     return ex as BTVenmoError;
+  }
+}
+
+export async function requestApplePayPayment(
+  options: RequestApplePayPaymentOptions
+): Promise<BTApplePayTokenizationNonceResult | BTPayPalError> {
+  try {
+    const result: BTApplePayTokenizationNonceResult =
+      await ExpoBraintree.requestApplePayPayment(options);
+    return result;
+  } catch (ex: unknown) {
+    return ex as BTPayPalError;
+  }
+}
+
+export async function requestGooglePayPayment({
+  isShippingAddressRequired = false,
+  isPhoneNumberRequired = false,
+  allowedCountryCodes = [],
+  ...rest
+}: RequestGooglePayPaymentOptions): Promise<
+  BTGooglePayTokenizationNonceResult | BTPayPalError
+> {
+  try {
+    const result: BTGooglePayTokenizationNonceResult =
+      await ExpoBraintree.requestGooglePayPayment({
+        isShippingAddressRequired,
+        isPhoneNumberRequired,
+        allowedCountryCodes,
+        ...rest,
+      });
+    return result;
+  } catch (ex: unknown) {
+    return ex as BTPayPalError;
   }
 }
 

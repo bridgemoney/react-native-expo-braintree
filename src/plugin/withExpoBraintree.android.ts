@@ -27,7 +27,7 @@ export const withExpoBraintreeAndroid: ConfigPlugin<IntentFilterProps> = (
     return config;
   });
 
-  newConfig = withMainActivity(expoConfig, (config) => {
+  newConfig = withMainActivity(newConfig, (config) => {
     const { modResults } = config;
     const { language } = modResults;
 

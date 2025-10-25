@@ -34,7 +34,7 @@ class ExpoBraintreeModuleHandlers {
         ))
       return
     }
-    
+
     error.message?.let {
       mPromise.reject(EXCEPTION_TYPES.KOTLIN_EXCEPTION.value,
         ERROR_TYPES.TOKENIZE_VAULT_PAYMENT_ERROR.value,
@@ -49,6 +49,32 @@ class ExpoBraintreeModuleHandlers {
       SharedDataConverter.createError(
         EXCEPTION_TYPES.KOTLIN_EXCEPTION.value, "PayPal Error"
       ))
+  }
+
+  fun onGPayFailure(error: Exception, mPromise: Promise) {
+    if (error is UserCanceledException) {
+      mPromise.reject(EXCEPTION_TYPES.USER_CANCEL_EXCEPTION.value,
+        ERROR_TYPES.USER_CANCEL_TRANSACTION_ERROR.value,
+        SharedDataConverter.createError(
+          EXCEPTION_TYPES.USER_CANCEL_EXCEPTION.value, error.message
+        ))
+      return
+    }
+
+    error.message?.let {
+      mPromise.reject(
+        EXCEPTION_TYPES.GPAY_EXCEPTION.value,
+        ERROR_TYPES.GPAY_PAYMENT_REQUEST_FAILED_ERROR.value,
+        PaypalDataConverter.createError(EXCEPTION_TYPES.GPAY_EXCEPTION.value, error.message)
+      )
+      return
+    }
+
+    mPromise.reject(
+      EXCEPTION_TYPES.GPAY_EXCEPTION.value,
+      ERROR_TYPES.GPAY_PAYMENT_REQUEST_FAILED_ERROR.value,
+      PaypalDataConverter.createError(EXCEPTION_TYPES.GPAY_EXCEPTION.value, "GPay Payment Request Failed")
+    )
   }
 
   fun onCancel(error: Exception, mPromise: Promise) {

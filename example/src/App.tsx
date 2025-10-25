@@ -3,6 +3,7 @@ import * as React from 'react';
 import {
   ActivityIndicator,
   Button,
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -15,6 +16,8 @@ import {
   requestOneTimePayment,
   requestVenmoNonce,
   tokenizeCardData,
+  requestGooglePayPayment,
+  requestApplePayPayment,
 } from 'react-native-expo-braintree';
 
 export const clientToken = 'sandbox_x62mvdjj_p8ngm2sczm8248vg';
@@ -24,77 +27,61 @@ export default function App() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [result, setResult] = React.useState('');
 
+  async function runPayment(payment: () => Promise<any>) {
+    try {
+      setIsLoading(true);
+      const res = await payment();
+      setIsLoading(false);
+      setResult(JSON.stringify(res));
+      console.log(JSON.stringify(res));
+    } catch (e) {
+      setResult(JSON.stringify(e));
+      console.log(JSON.stringify(e));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <View style={styles.container}>
       <Button
         title="Click Me to request Billing Agreement"
         onPress={async () => {
-          try {
-            setIsLoading(true);
-            const localResult = await requestBillingAgreement({
+          await runPayment(() => {
+            return requestBillingAgreement({
               clientToken,
               merchantAppLink,
             });
-            setIsLoading(false);
-            setResult(JSON.stringify(localResult));
-            console.log(JSON.stringify(localResult));
-          } catch (ex) {
-            setResult(JSON.stringify(ex));
-            setResult(JSON.stringify(ex));
-
-            console.log(JSON.stringify(ex));
-          } finally {
-            setIsLoading(false);
-          }
+          });
         }}
       />
       <Button
         title="Click Me To Get Device Data"
         onPress={async () => {
-          try {
-            setIsLoading(true);
-            const resultDeviceData =
-              await getDeviceDataFromDataCollector(clientToken);
-            setIsLoading(false);
-            setResult(JSON.stringify(resultDeviceData));
-            console.log(JSON.stringify(resultDeviceData));
-          } catch (ex) {
-            setResult(JSON.stringify(ex));
-            console.log(JSON.stringify(ex));
-          } finally {
-            setIsLoading(false);
-          }
+          await runPayment(() => {
+            return getDeviceDataFromDataCollector(clientToken);
+          });
         }}
       />
 
       <Button
         title="Click Me To request One time Payment"
         onPress={async () => {
-          try {
-            setIsLoading(true);
-            const resultDeviceData = await requestOneTimePayment({
+          await runPayment(() => {
+            return requestOneTimePayment({
               clientToken,
               amount: '5',
               merchantAppLink,
             });
-            setIsLoading(false);
-            setResult(JSON.stringify(resultDeviceData));
-            console.log(JSON.stringify(resultDeviceData));
-          } catch (ex) {
-            setResult(JSON.stringify(ex));
-            console.log(JSON.stringify(ex));
-          } finally {
-            setIsLoading(false);
-          }
+          });
         }}
       />
 
       <Button
         title="Click Me To Tokenize Card"
         onPress={async () => {
-          try {
-            setIsLoading(true);
-            const tokenizedCard = await tokenizeCardData({
+          await runPayment(() => {
+            return tokenizeCardData({
               clientToken,
               number: '1111222233334444',
               expirationMonth: '11',
@@ -102,40 +89,55 @@ export default function App() {
               cvv: '123',
               postalCode: '',
             });
-            setIsLoading(false);
-            setResult(JSON.stringify(tokenizedCard));
-            console.log(JSON.stringify(tokenizedCard));
-          } catch (ex) {
-            setResult(JSON.stringify(ex));
-            console.log(JSON.stringify(ex));
-          } finally {
-            setIsLoading(false);
-          }
+          });
         }}
       />
 
       <Button
         title="Click Me To Request a Venmo nonce"
         onPress={async () => {
-          try {
-            setIsLoading(true);
-            const nonce = await requestVenmoNonce({
+          await runPayment(() => {
+            return requestVenmoNonce({
               clientToken,
               vault: BoolValue.true,
               paymentMethodUsage: BTVenmoPaymntMethodUsage.multiUse,
               totalAmount: '5',
             });
-            setIsLoading(false);
-            setResult(JSON.stringify(nonce));
-            console.log(JSON.stringify(nonce));
-          } catch (ex) {
-            setResult(JSON.stringify(ex));
-            console.log(ex);
-          } finally {
-            setIsLoading(false);
-          }
+          });
         }}
       />
+      {Platform.OS === 'android' ? (
+        <Button
+          title="Click Me To request GooglePay Payment"
+          onPress={async () => {
+            await runPayment(() => {
+              return requestGooglePayPayment({
+                clientToken,
+                amount: '5',
+                currencyCode: 'USD',
+                isPhoneNumberRequired: false,
+                isShippingAddressRequired: false,
+                env: 'test',
+              });
+            });
+          }}
+        />
+      ) : (
+        <Button
+          title="Click Me To request ApplePay Payment"
+          onPress={async () => {
+            await runPayment(() => {
+              return requestApplePayPayment({
+                clientToken,
+                amount: '5',
+                currencyCode: 'USD',
+                countryCode: 'US',
+                merchantName: 'BridgeMoney, Inc',
+              });
+            });
+          }}
+        />
+      )}
       {isLoading && <ActivityIndicator />}
       <Text>{result}</Text>
     </View>
