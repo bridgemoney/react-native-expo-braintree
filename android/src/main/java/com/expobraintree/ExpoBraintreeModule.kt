@@ -309,6 +309,8 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
     try {
       promiseRef = localPromise
       currentActivityRef = getCurrentActivity() as FragmentActivity
+      initGooglePayLauncher();
+
       googlePayClientRef = GooglePayClient(reactContextRef, data.getString("clientToken") ?: "")
 
       if (this::currentActivityRef.isInitialized) {
@@ -474,6 +476,28 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
     }
   }
 
+  private fun initGooglePayLauncher() {
+    if (!this::googlePayLauncher.isInitialized) {
+      googlePayLauncher = GooglePayLauncher(currentActivityRef) { googlePayPaymentAuthResult: GooglePayPaymentAuthResult ->
+        googlePayClientRef.tokenize(googlePayPaymentAuthResult) { googlePayResult: GooglePayResult ->
+          when (googlePayResult) {
+            is GooglePayResult.Success -> {
+              promiseRef.resolve(PaypalDataConverter.createGooglePayDataNonce(googlePayResult.nonce))
+            }
+
+            is GooglePayResult.Failure -> {
+              moduleHandlers.onGPayFailure(googlePayResult.error, promiseRef)
+            }
+
+            is GooglePayResult.Cancel -> {
+              moduleHandlers.onGPayFailure(RuntimeException("User cancelled"), promiseRef)
+            }
+          }
+        }
+      }
+    }
+  }
+
   override fun getName(): String {
     return NAME
   }
@@ -486,27 +510,6 @@ class ExpoBraintreeModule(reactContext: ReactApplicationContext) :
   override fun onHostResume() {
     if (this::currentActivityRef.isInitialized) {
       currentActivityRef = getCurrentActivity() as FragmentActivity
-
-      if (!this::googlePayLauncher.isInitialized) {
-        googlePayLauncher = GooglePayLauncher(currentActivityRef) { googlePayPaymentAuthResult: GooglePayPaymentAuthResult ->
-          googlePayClientRef.tokenize(googlePayPaymentAuthResult) { googlePayResult: GooglePayResult ->
-            when (googlePayResult) {
-              is GooglePayResult.Success -> {
-                promiseRef.resolve(PaypalDataConverter.createGooglePayDataNonce(googlePayResult.nonce))
-              }
-
-              is GooglePayResult.Failure -> {
-                moduleHandlers.onGPayFailure(googlePayResult.error, promiseRef)
-              }
-
-              is GooglePayResult.Cancel -> {
-                moduleHandlers.onGPayFailure(RuntimeException("User cancelled"), promiseRef)
-              }
-            }
-          }
-        }
-      }
-
       handleReturnToApp(currentActivityRef.getIntent())
     }
   }
